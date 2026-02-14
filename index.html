@@ -14,12 +14,12 @@ button{font-family:inherit}
 .hdr h1{font-size:22px;font-weight:700;color:var(--text)}
 .hdr .sub{font-size:12px;color:var(--text2);margin-top:2px}
 
-.stats-bar{display:flex;gap:8px;padding:14px 20px;overflow-x:auto;background:var(--bg2);border-bottom:1px solid var(--border)}
+.stats-bar{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px;background:var(--bg2);border-bottom:1px solid var(--border)}
 .stat-pill{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:6px}
 .stat-pill .dot{width:7px;height:7px;border-radius:50%}
 
-.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto;gap:0}
-.tab{flex:1;padding:12px 6px;text-align:center;font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:var(--text2);white-space:nowrap;min-width:60px;text-transform:uppercase;letter-spacing:.3px;transition:all .15s}
+.tabs{display:flex;flex-wrap:wrap;background:var(--bg2);border-bottom:1px solid var(--border);gap:0}
+.tab{flex:1 1 33.33%;padding:11px 6px;text-align:center;font-size:12px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;color:var(--text2);white-space:nowrap;text-transform:uppercase;letter-spacing:.3px;transition:all .15s}
 .tab.active{color:var(--accent);border-bottom-color:var(--accent)}
 .tab .badge{background:var(--accent);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;margin-left:3px}
 
