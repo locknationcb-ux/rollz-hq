@@ -48,6 +48,7 @@ button{font-family:inherit}
 .tag-todo{background:var(--blue-light);color:var(--blue)}
 .tag-progress{background:var(--yellow-light);color:var(--yellow)}
 .tag-done{background:var(--green-light);color:var(--green)}
+.tag-blackhat{background:#1a1a2e;color:#e0e0e0}
 .tag-blocked{background:var(--red-light);color:var(--red)}
 .task .cat{font-size:11px;color:var(--text2);background:var(--bg3);padding:2px 8px;border-radius:6px}
 .task .priority-flag{font-size:11px;font-weight:700}
@@ -99,6 +100,14 @@ button{font-family:inherit}
   <div class="sub" id="syncStatus">Local storage</div>
 </div>
 
+<div style="display:flex;gap:8px;padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-wrap:wrap">
+  <a href="https://docs.google.com/spreadsheets/d/13Q3R97feqkQKa-l4zupOXB02-Lq8zUTFTYF-24dnf0M" target="_blank" style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--green-light);color:var(--green);text-decoration:none;white-space:nowrap">FL Leads (9.7K)</a>
+  <a href="https://whop.com/@locknationbets" target="_blank" style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--blue-light);color:var(--blue);text-decoration:none;white-space:nowrap">Whop</a>
+  <a href="https://locknationbets.xyz" target="_blank" style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--purple-light);color:var(--purple);text-decoration:none;white-space:nowrap">LockNation Site</a>
+  <a href="https://phantombuster.com/7052429431242369/phantoms" target="_blank" style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--yellow-light);color:var(--yellow);text-decoration:none;white-space:nowrap">PhantomBuster</a>
+  <a href="https://app.manychat.com" target="_blank" style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--red-light);color:var(--red);text-decoration:none;white-space:nowrap">ManyChat</a>
+  <a href="https://app.instantly.ai" target="_blank" style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;background:var(--accent-light);color:var(--accent);text-decoration:none;white-space:nowrap">Instantly</a>
+</div>
 <div class="stats-bar" id="statsBar"></div>
 
 <div class="tabs" id="tabs">
@@ -108,6 +117,7 @@ button{font-family:inherit}
   <div class="tab" data-tab="progress" onclick="switchTab('progress')">Active</div>
   <div class="tab" data-tab="blocked" onclick="switchTab('blocked')">Blocked</div>
   <div class="tab" data-tab="done" onclick="switchTab('done')">Done</div>
+  <div class="tab" data-tab="blackhat" onclick="switchTab('blackhat')" style="color:var(--text2)">Black Hat</div>
 </div>
 
 <div class="search-bar">
@@ -141,6 +151,7 @@ button{font-family:inherit}
         <div class="status-opt" data-v="progress" onclick="pickStatus(this)">Active</div>
         <div class="status-opt" data-v="blocked" onclick="pickStatus(this)">Blocked</div>
         <div class="status-opt" data-v="done" onclick="pickStatus(this)">Done</div>
+        <div class="status-opt" data-v="blackhat" onclick="pickStatus(this)" style="background:#1a1a2e;color:#e0e0e0;border-color:#1a1a2e">Black Hat</div>
       </div>
     </div>
     
@@ -174,7 +185,7 @@ button{font-family:inherit}
 const STORAGE_KEY='rollz_hq_v2';
 let state=loadState(),currentTab='all',currentCat=null,editingId=null;
 
-function defaultState(){return{tasks:[],categories:['LockNation','Lead Gen','Quiz Apps','Cannabis','Real Estate','Auto Insurance','IG/Social','Tech/Dev','Outreach','Other'],lastSync:null}}
+function defaultState(){return{tasks:[],categories:['LockNation','Lead Gen','Quiz Apps','Cannabis','Real Estate','Auto Insurance','IG/Social','Tech/Dev','Outreach','Black Hat','Other'],lastSync:null}}
 function loadState(){try{const r=localStorage.getItem(STORAGE_KEY);if(r)return JSON.parse(r)}catch(e){}return defaultState()}
 function saveState(){state.lastSync=Date.now();localStorage.setItem(STORAGE_KEY,JSON.stringify(state));document.getElementById('syncStatus').textContent='Saved '+new Date().toLocaleTimeString()}
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
@@ -225,11 +236,11 @@ function renderTasks(){
     return(b.updatedAt||b.createdAt)-(a.updatedAt||a.createdAt);
   });
   if(!tasks.length){document.getElementById('taskList').innerHTML=`<div class="empty"><div class="icon">--</div><div>No tasks here yet</div><div style="margin-top:6px;font-size:13px">Tap + to add one</div></div>`;return}
-  const labels={idea:'Ideas',todo:'To Do',progress:'In Progress',blocked:'Blocked',done:'Done'};
+  const labels={idea:'Ideas',todo:'To Do',progress:'In Progress',blocked:'Blocked',done:'Done',blackhat:'Black Hat'};
   let html='';
   if(currentTab==='all'){
     const groups={};tasks.forEach(t=>{if(!groups[t.status])groups[t.status]=[];groups[t.status].push(t)});
-    for(const s of['progress','todo','idea','blocked','done']){if(!groups[s])continue;html+=`<div class="task-group-header">${labels[s]} (${groups[s].length})</div>`;groups[s].forEach(t=>html+=renderTask(t))}
+    for(const s of['progress','todo','idea','blocked','blackhat','done']){if(!groups[s])continue;html+=`<div class="task-group-header">${labels[s]} (${groups[s].length})</div>`;groups[s].forEach(t=>html+=renderTask(t))}
   }else{tasks.forEach(t=>html+=renderTask(t))}
   document.getElementById('taskList').innerHTML=html;
 }
@@ -243,7 +254,7 @@ function renderTask(t){
       <div class="title">${escHtml(t.title)}</div>
     </div>
     <div class="meta">
-      <span class="tag tag-${t.status}">${t.status==='progress'?'Active':t.status.charAt(0).toUpperCase()+t.status.slice(1)}</span>
+      <span class="tag tag-${t.status}">${t.status==='progress'?'Active':t.status==='blackhat'?'Black Hat':t.status.charAt(0).toUpperCase()+t.status.slice(1)}</span>
       ${pf}
       ${t.category?`<span class="cat">${escHtml(t.category)}</span>`:''}
       ${t.reminder?`<span class="reminder-tag">${escHtml(t.reminder).slice(0,30)}${t.reminder.length>30?'...':''}</span>`:''}
@@ -326,6 +337,12 @@ function seedIfEmpty(){
     {title:'Migrate task tracker to GitHub Pages',status:'blocked',priority:'low',category:'Tech/Dev',notes:'Netlify free tier added password. GitHub Pages is better.'},
     {title:'LLC/tax prep/lawyer quiz apps',status:'done',priority:'high',category:'Quiz Apps',notes:'lawyer-case-eval.html, tax-prep.html, llc-setup.html all built.'},
     {title:'Set up Google Alerts for class actions',status:'todo',priority:'high',category:'Lead Gen',notes:'Monitor new lawsuits for instant landing page deployment'},
+    {title:'Review Hijacking â€” Claim competitor GBPs via suggest edits',status:'blackhat',priority:'high',category:'Black Hat',notes:'Find competitors with unclaimed/poorly managed GBPs. Suggest edits to phone number, hours, website. Redirect their calls to your tracking number.'},
+    {title:'Fake GBP network for auto insurance leads',status:'blackhat',priority:'high',category:'Black Hat',notes:'30 business names ready in gbp-setup-execution/. Tracking CSV, post templates, landing pages all built.'},
+    {title:'Parasite SEO â€” pump articles to Medium/Reddit/Quora',status:'blackhat',priority:'med',category:'Black Hat',notes:'High-DA platforms rank fast. Article templates in seo-articles/. Funnel to IG and landing pages.'},
+    {title:'Mass DM via SIM farm or cloud phones',status:'blackhat',priority:'med',category:'Black Hat',notes:'Playbook in locknation-sim-farm-playbook.md. Burner accounts, rotating proxies, warm-up period.'},
+    {title:'Telegram group infiltration â€” scrape competitor member lists',status:'blackhat',priority:'med',category:'Black Hat',notes:'Join competitor betting Telegram groups, scrape members, mass DM with LockNation offer.'},
+    {title:'Cloned landing pages â€” replicate top converting competitor funnels',status:'blackhat',priority:'low',category:'Black Hat',notes:'Playbook in locknation-cloned-pages-scraping-playbook.md'},
   ];
   seeds.forEach(s=>{state.tasks.push({...s,id:genId(),createdAt:Date.now(),updatedAt:Date.now(),reminder:s.reminder||''})});
   saveState();
