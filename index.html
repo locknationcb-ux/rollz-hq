@@ -213,10 +213,11 @@ function renderTabBadges(){
 }
 
 function renderCatFilters(){
-  const cats=[...new Set(state.tasks.map(t=>t.category).filter(Boolean))];
+  const cats=state.categories||[];
+  const counts={};state.tasks.filter(t=>t.status!=='done').forEach(t=>{if(t.category)counts[t.category]=(counts[t.category]||0)+1});
   document.getElementById('catFilters').innerHTML=
     `<div class="filter-btn ${!currentCat?'active':''}" onclick="currentCat=null;render()">All</div>`+
-    cats.map(c=>`<div class="filter-btn ${currentCat===c?'active':''}" onclick="currentCat='${c}';render()">${c}</div>`).join('');
+    cats.map(c=>`<div class="filter-btn ${currentCat===c?'active':''}" onclick="currentCat='${c.replace(/'/g,"\\'").replace(/"/g,'&quot;')}';render()">${c}${counts[c]?` <span style="opacity:.6">(${counts[c]})</span>`:''}</div>`).join('');
 }
 
 function renderTasks(){
