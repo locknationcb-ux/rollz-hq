@@ -348,7 +348,24 @@ function seedIfEmpty(){
   saveState();
 }
 
-seedIfEmpty();render();
+seedIfEmpty();
+
+// Ensure Black Hat category + ideas exist for existing users
+if(!state.categories.includes('Black Hat')){state.categories.push('Black Hat');saveState()}
+if(!state.tasks.some(t=>t.status==='blackhat')){
+  const bh=[
+    {title:'Review Hijacking â€” Claim competitor GBPs via suggest edits',status:'blackhat',priority:'high',category:'Black Hat',notes:'Find competitors with unclaimed/poorly managed GBPs. Suggest edits to phone number, hours, website. Redirect their calls to your tracking number.'},
+    {title:'Fake GBP network for auto insurance leads',status:'blackhat',priority:'high',category:'Black Hat',notes:'30 business names ready in gbp-setup-execution/. Tracking CSV, post templates, landing pages all built.'},
+    {title:'Parasite SEO â€” pump articles to Medium/Reddit/Quora',status:'blackhat',priority:'med',category:'Black Hat',notes:'High-DA platforms rank fast. Article templates in seo-articles/. Funnel to IG and landing pages.'},
+    {title:'Mass DM via SIM farm or cloud phones',status:'blackhat',priority:'med',category:'Black Hat',notes:'Playbook in locknation-sim-farm-playbook.md. Burner accounts, rotating proxies, warm-up period.'},
+    {title:'Telegram group infiltration â€” scrape competitor member lists',status:'blackhat',priority:'med',category:'Black Hat',notes:'Join competitor betting Telegram groups, scrape members, mass DM with LockNation offer.'},
+    {title:'Cloned landing pages â€” replicate top converting competitor funnels',status:'blackhat',priority:'low',category:'Black Hat',notes:'Playbook in locknation-cloned-pages-scraping-playbook.md'},
+  ];
+  bh.forEach(s=>{state.tasks.push({...s,id:genId(),createdAt:Date.now(),updatedAt:Date.now(),reminder:''})});
+  saveState();
+}
+
+render();
 </script>
 </body>
 </html>
