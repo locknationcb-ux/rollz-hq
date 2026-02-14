@@ -124,7 +124,20 @@ button{font-family:inherit}
   <input type="text" id="searchInput" placeholder="Search tasks..." oninput="render()">
 </div>
 
-<div class="filter-row" id="catFilters"></div>
+<div class="filter-row" id="catFilters">
+  <div class="filter-btn active" onclick="currentCat=null;render()">All</div>
+  <div class="filter-btn" onclick="currentCat='LockNation';render()">LockNation</div>
+  <div class="filter-btn" onclick="currentCat='Lead Gen';render()">Lead Gen</div>
+  <div class="filter-btn" onclick="currentCat='Quiz Apps';render()">Quiz Apps</div>
+  <div class="filter-btn" onclick="currentCat='Cannabis';render()">Cannabis</div>
+  <div class="filter-btn" onclick="currentCat='Real Estate';render()">Real Estate</div>
+  <div class="filter-btn" onclick="currentCat='Auto Insurance';render()">Auto Insurance</div>
+  <div class="filter-btn" onclick="currentCat='IG/Social';render()">IG/Social</div>
+  <div class="filter-btn" onclick="currentCat='Tech/Dev';render()">Tech/Dev</div>
+  <div class="filter-btn" onclick="currentCat='Outreach';render()">Outreach</div>
+  <div class="filter-btn" onclick="currentCat='Black Hat';render()" style="background:#1a1a2e;color:#e0e0e0;border-color:#1a1a2e">Black Hat</div>
+  <div class="filter-btn" onclick="currentCat='Other';render()">Other</div>
+</div>
 <div class="task-list" id="taskList"></div>
 
 <button class="fab" onclick="openModal()">+</button>
@@ -213,11 +226,17 @@ function renderTabBadges(){
 }
 
 function renderCatFilters(){
-  const cats=state.categories||[];
-  const counts={};state.tasks.filter(t=>t.status!=='done').forEach(t=>{if(t.category)counts[t.category]=(counts[t.category]||0)+1});
-  document.getElementById('catFilters').innerHTML=
-    `<div class="filter-btn ${!currentCat?'active':''}" onclick="currentCat=null;render()">All</div>`+
-    cats.map(c=>`<div class="filter-btn ${currentCat===c?'active':''}" onclick="currentCat='${c.replace(/'/g,"\\'").replace(/"/g,'&quot;')}';render()">${c}${counts[c]?` <span style="opacity:.6">(${counts[c]})</span>`:''}</div>`).join('');
+  document.querySelectorAll('#catFilters .filter-btn').forEach(btn=>{
+    const cat=btn.textContent.replace(/\s*\(\d+\)/,'').trim();
+    const isAll=cat==='All';
+    const isActive=isAll?!currentCat:currentCat===cat;
+    btn.classList.toggle('active',isActive);
+    if(!isAll){
+      const count=state.tasks.filter(t=>t.category===cat&&t.status!=='done').length;
+      const base=cat.replace(/\s*\(\d+\)/,'');
+      btn.textContent=count?`${base} (${count})`:base;
+    }
+  });
 }
 
 function renderTasks(){
