@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ðŸŽ² Rollz HQ</title>
+<style>
+:root{--bg:#0f0f1a;--bg2:#1a1a2e;--bg3:#222240;--text:#e8e8f0;--text2:#8888a8;--accent:#e94560;--green:#4ade80;--yellow:#facc15;--blue:#60a5fa;--purple:#a78bfa;--border:#2a2a4a;--radius:12px}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;padding-bottom:80px}
+button{font-family:inherit}
+
+/* Header */
+.hdr{padding:16px 20px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.hdr h1{font-size:20px;display:flex;align-items:center;gap:8px}
+.hdr .sync{font-size:12px;color:var(--text2)}
+.stats-bar{display:flex;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border);overflow-x:auto}
+.stat-pill{background:var(--bg2);padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap;display:flex;align-items:center;gap:5px}
+.stat-pill .dot{width:8px;height:8px;border-radius:50%}
+
+/* Tabs */
+.tabs{display:flex;border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{flex:1;padding:12px 8px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;color:var(--text2);white-space:nowrap;min-width:70px}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab .badge{background:var(--accent);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;margin-left:4px}
+
+/* Search & Filter */
+.search-bar{padding:12px 20px;display:flex;gap:8px}
+.search-bar input{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;color:var(--text);font-size:14px;outline:none}
+.search-bar input:focus{border-color:var(--accent)}
+.filter-row{display:flex;gap:6px;padding:0 20px 12px;overflow-x:auto}
+.filter-btn{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:6px 12px;font-size:12px;color:var(--text2);cursor:pointer;white-space:nowrap}
+.filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* Task List */
+.task-list{padding:8px 12px}
+.task-group-header{padding:8px 8px 4px;font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:6px}
+.task{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:all .15s}
+.task:active{transform:scale(.98)}
+.task .top{display:flex;align-items:flex-start;gap:10px}
+.task .check{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;cursor:pointer;font-size:14px}
+.task .check.done{background:var(--green);border-color:var(--green);color:#000}
+.task .title{flex:1;font-size:15px;font-weight:500;line-height:1.4}
+.task.done .title{text-decoration:line-through;opacity:.5}
+.task .meta{display:flex;gap:8px;margin-top:8px;margin-left:32px;flex-wrap:wrap}
+.task .tag{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600}
+.tag-idea{background:#4a1942;color:var(--purple)}
+.tag-todo{background:#1a3a4a;color:var(--blue)}
+.tag-progress{background:#4a3a1a;color:var(--yellow)}
+.tag-done{background:#1a4a2a;color:var(--green)}
+.tag-blocked{background:#4a1a1a;color:#ef4444}
+.task .cat{font-size:11px;color:var(--text2);background:var(--bg3);padding:2px 8px;border-radius:10px}
+.task .priority{font-size:11px}
+.task .notes-preview{font-size:12px;color:var(--text2);margin-top:6px;margin-left:32px;line-height:1.4;max-height:40px;overflow:hidden}
+
+/* FAB */
+.fab{position:fixed;bottom:20px;right:20px;width:56px;height:56px;border-radius:50%;background:var(--accent);border:none;color:#fff;font-size:28px;cursor:pointer;box-shadow:0 4px 16px rgba(233,69,96,.4);z-index:100;display:flex;align-items:center;justify-content:center}
+
+/* Modal */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:flex-end;justify-content:center}
+.modal-bg.show{display:flex}
+.modal{background:var(--bg);border-radius:20px 20px 0 0;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;padding:20px;animation:slideUp .2s}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal h2{font-size:18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.modal h2 button{background:none;border:none;color:var(--text2);font-size:24px;cursor:pointer;padding:4px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--text2);margin-bottom:5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.field input,.field textarea,.field select{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px;outline:none;font-family:inherit}
+.field textarea{height:80px;resize:none}
+.field select{appearance:none}
+.field input:focus,.field textarea:focus{border-color:var(--accent)}
+.status-row{display:flex;gap:6px;flex-wrap:wrap}
+.status-opt{padding:8px 14px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:2px solid var(--border);background:var(--bg2)}
+.status-opt.active{border-color:var(--accent)}
+.priority-row{display:flex;gap:8px}
+.priority-opt{flex:1;padding:10px;text-align:center;border-radius:10px;font-size:13px;cursor:pointer;border:2px solid var(--border);background:var(--bg2)}
+.priority-opt.active{border-color:var(--accent)}
+.save-btn{width:100%;padding:14px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-top:10px}
+.delete-btn{width:100%;padding:12px;background:none;color:#ef4444;border:1px solid #ef4444;border-radius:12px;font-size:14px;cursor:pointer;margin-top:8px}
+.empty{text-align:center;padding:60px 20px;color:var(--text2)}
+.empty .icon{font-size:48px;margin-bottom:12px}
+
+/* Categories */
+.cat-pills{display:flex;gap:6px;flex-wrap:wrap}
+.cat-pill{padding:6px 12px;border-radius:10px;font-size:12px;cursor:pointer;border:1px solid var(--border);background:var(--bg2);color:var(--text2)}
+.cat-pill.active{border-color:var(--accent);color:var(--accent)}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <h1>ðŸŽ² Rollz HQ</h1>
+  <div class="sync" id="syncStatus">Local storage</div>
+</div>
+
+<div class="stats-bar" id="statsBar"></div>
+
+<div class="tabs" id="tabs">
+  <div class="tab active" data-tab="all" onclick="switchTab('all')">All</div>
+  <div class="tab" data-tab="idea" onclick="switchTab('idea')">ðŸ’¡ Ideas</div>
+  <div class="tab" data-tab="todo" onclick="switchTab('todo')">ðŸ“‹ To Do</div>
+  <div class="tab" data-tab="progress" onclick="switchTab('progress')">ðŸ”„ Active</div>
+  <div class="tab" data-tab="blocked" onclick="switchTab('blocked')">ðŸš« Blocked</div>
+  <div class="tab" data-tab="done" onclick="switchTab('done')">âœ… Done</div>
+</div>
+
+<div class="search-bar">
+  <input type="text" id="searchInput" placeholder="Search tasks..." oninput="render()">
+</div>
+
+<div class="filter-row" id="catFilters"></div>
+<div class="task-list" id="taskList"></div>
+
+<button class="fab" onclick="openModal()">+</button>
+
+<!-- Add/Edit Modal -->
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h2><span id="modalTitle">New Task</span><button onclick="closeModal()">Ã—</button></h2>
+    
+    <div class="field">
+      <label>Title</label>
+      <input type="text" id="fTitle" placeholder="What needs to be done?">
+    </div>
+    
+    <div class="field">
+      <label>Notes</label>
+      <textarea id="fNotes" placeholder="Details, links, context..."></textarea>
+    </div>
+    
+    <div class="field">
+      <label>Status</label>
+      <div class="status-row" id="statusRow">
+        <div class="status-opt" data-v="idea" onclick="pickStatus(this)">ðŸ’¡ Idea</div>
+        <div class="status-opt active" data-v="todo" onclick="pickStatus(this)">ðŸ“‹ To Do</div>
+        <div class="status-opt" data-v="progress" onclick="pickStatus(this)">ðŸ”„ Active</div>
+        <div class="status-opt" data-v="blocked" onclick="pickStatus(this)">ðŸš« Blocked</div>
+        <div class="status-opt" data-v="done" onclick="pickStatus(this)">âœ… Done</div>
+      </div>
+    </div>
+    
+    <div class="field">
+      <label>Priority</label>
+      <div class="priority-row" id="priorityRow">
+        <div class="priority-opt" data-v="low" onclick="pickPriority(this)">Low</div>
+        <div class="priority-opt active" data-v="med" onclick="pickPriority(this)">Medium</div>
+        <div class="priority-opt" data-v="high" onclick="pickPriority(this)">ðŸ”¥ High</div>
+        <div class="priority-opt" data-v="urgent" onclick="pickPriority(this)">ðŸš¨ Urgent</div>
+      </div>
+    </div>
+    
+    <div class="field">
+      <label>Category</label>
+      <div class="cat-pills" id="catPills"></div>
+      <input type="text" id="fNewCat" placeholder="+ New category" style="margin-top:8px" onkeydown="if(event.key==='Enter'){addCategory(this.value);this.value=''}">
+    </div>
+    
+    <div class="field">
+      <label>Remind Me (talk to Rollz about)</label>
+      <input type="text" id="fReminder" placeholder="What to discuss next time...">
+    </div>
+    
+    <button class="save-btn" onclick="saveTask()">Save Task</button>
+    <button class="delete-btn" id="deleteBtn" style="display:none" onclick="deleteTask()">Delete Task</button>
+  </div>
+</div>
+
+<script>
+// ============ DATA ============
+const STORAGE_KEY = 'rollz_hq_v2';
+let state = loadState();
+let currentTab = 'all';
+let currentCat = null;
+let editingId = null;
+
+function defaultState() {
+  return {
+    tasks: [],
+    categories: ['LockNation', 'Lead Gen', 'Quiz Apps', 'Cannabis', 'Real Estate', 'Auto Insurance', 'IG/Social', 'Tech/Dev', 'Outreach', 'Other'],
+    lastSync: null
+  };
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return defaultState();
+}
+
+function saveState() {
+  state.lastSync = Date.now();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  document.getElementById('syncStatus').textContent = 'Saved ' + new Date().toLocaleTimeString();
+}
+
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+// ============ RENDER ============
+function render() {
+  renderStats();
+  renderCatFilters();
+  renderTasks();
+  renderTabBadges();
+}
+
+function renderStats() {
+  const tasks = state.tasks;
+  const total = tasks.length;
+  const done = tasks.filter(t => t.status === 'done').length;
+  const active = tasks.filter(t => t.status === 'progress').length;
+  const blocked = tasks.filter(t => t.status === 'blocked').length;
+  const urgent = tasks.filter(t => t.priority === 'urgent' && t.status !== 'done').length;
+  
+  document.getElementById('statsBar').innerHTML = `
+    <div class="stat-pill"><div class="dot" style="background:var(--blue)"></div>${total} Total</div>
+    <div class="stat-pill"><div class="dot" style="background:var(--yellow)"></div>${active} Active</div>
+    <div class="stat-pill"><div class="dot" style="background:var(--green)"></div>${done} Done</div>
+    ${blocked ? `<div class="stat-pill"><div class="dot" style="background:#ef4444"></div>${blocked} Blocked</div>` : ''}
+    ${urgent ? `<div class="stat-pill"><div class="dot" style="background:var(--accent)"></div>ðŸš¨ ${urgent} Urgent</div>` : ''}
+  `;
+}
+
+function renderTabBadges() {
+  document.querySelectorAll('.tab').forEach(tab => {
+    const t = tab.dataset.tab;
+    const count = t === 'all' ? state.tasks.filter(x => x.status !== 'done').length : state.tasks.filter(x => x.status === t).length;
+    const badge = tab.querySelector('.badge');
+    if (badge) badge.textContent = count;
+    else if (count > 0 && t !== 'all') {
+      tab.innerHTML = tab.innerHTML.replace(/<span class="badge">.*?<\/span>/, '') + ` <span class="badge">${count}</span>`;
+    }
+  });
+}
+
+function renderCatFilters() {
+  const cats = [...new Set(state.tasks.map(t => t.category).filter(Boolean))];
+  document.getElementById('catFilters').innerHTML = 
+    `<div class="filter-btn ${!currentCat ? 'active' : ''}" onclick="currentCat=null;render()">All</div>` +
+    cats.map(c => `<div class="filter-btn ${currentCat===c ? 'active' : ''}" onclick="currentCat='${c}';render()">${c}</div>`).join('');
+}
+
+function renderTasks() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  let tasks = state.tasks.filter(t => {
+    if (currentTab !== 'all' && t.status !== currentTab) return false;
+    if (currentCat && t.category !== currentCat) return false;
+    if (search && !t.title.toLowerCase().includes(search) && !(t.notes||'').toLowerCase().includes(search)) return false;
+    return true;
+  });
+  
+  // Sort: urgent first, then high, then by date
+  const priorityOrder = {urgent:0, high:1, med:2, low:3};
+  tasks.sort((a,b) => {
+    if (a.status === 'done' && b.status !== 'done') return 1;
+    if (b.status === 'done' && a.status !== 'done') return -1;
+    const pa = priorityOrder[a.priority] ?? 2;
+    const pb = priorityOrder[b.priority] ?? 2;
+    if (pa !== pb) return pa - pb;
+    return (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt);
+  });
+  
+  if (!tasks.length) {
+    document.getElementById('taskList').innerHTML = `<div class="empty"><div class="icon">ðŸ“‹</div><div>No tasks here yet</div><div style="margin-top:8px;font-size:13px">Tap + to add one</div></div>`;
+    return;
+  }
+  
+  const statusLabels = {idea:'ðŸ’¡ Ideas', todo:'ðŸ“‹ To Do', progress:'ðŸ”„ In Progress', blocked:'ðŸš« Blocked', done:'âœ… Done'};
+  
+  let html = '';
+  if (currentTab === 'all') {
+    // Group by status
+    const groups = {};
+    tasks.forEach(t => {
+      if (!groups[t.status]) groups[t.status] = [];
+      groups[t.status].push(t);
+    });
+    const order = ['progress','urgent_todo','todo','idea','blocked','done'];
+    for (const status of ['progress','todo','idea','blocked','done']) {
+      if (!groups[status]) continue;
+      html += `<div class="task-group-header">${statusLabels[status] || status} (${groups[status].length})</div>`;
+      groups[status].forEach(t => html += renderTask(t));
+    }
+  } else {
+    tasks.forEach(t => html += renderTask(t));
+  }
+  
+  document.getElementById('taskList').innerHTML = html;
+}
+
+function renderTask(t) {
+  const statusClass = `tag-${t.status}`;
+  const isDone = t.status === 'done';
+  const priorityEmoji = t.priority === 'urgent' ? 'ðŸš¨' : t.priority === 'high' ? 'ðŸ”¥' : '';
+  
+  return `
+    <div class="task ${isDone ? 'done' : ''}" onclick="openModal('${t.id}')">
+      <div class="top">
+        <div class="check ${isDone ? 'done' : ''}" onclick="event.stopPropagation();toggleDone('${t.id}')">${isDone ? 'âœ“' : ''}</div>
+        <div class="title">${priorityEmoji} ${escHtml(t.title)}</div>
+      </div>
+      <div class="meta">
+        <span class="tag ${statusClass}">${t.status}</span>
+        ${t.category ? `<span class="cat">${escHtml(t.category)}</span>` : ''}
+        ${t.reminder ? `<span class="tag tag-idea">ðŸ’¬ ${escHtml(t.reminder).slice(0,30)}</span>` : ''}
+      </div>
+      ${t.notes ? `<div class="notes-preview">${escHtml(t.notes)}</div>` : ''}
+    </div>
+  `;
+}
+
+function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ============ ACTIONS ============
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  render();
+}
+
+function toggleDone(id) {
+  const task = state.tasks.find(t => t.id === id);
+  if (!task) return;
+  task.status = task.status === 'done' ? 'todo' : 'done';
+  task.updatedAt = Date.now();
+  saveState();
+  render();
+}
+
+function openModal(id) {
+  editingId = id || null;
+  const modal = document.getElementById('modalBg');
+  
+  if (id) {
+    const task = state.tasks.find(t => t.id === id);
+    if (!task) return;
+    document.getElementById('modalTitle').textContent = 'Edit Task';
+    document.getElementById('fTitle').value = task.title;
+    document.getElementById('fNotes').value = task.notes || '';
+    document.getElementById('fReminder').value = task.reminder || '';
+    document.getElementById('deleteBtn').style.display = 'block';
+    
+    document.querySelectorAll('#statusRow .status-opt').forEach(o => o.classList.toggle('active', o.dataset.v === task.status));
+    document.querySelectorAll('#priorityRow .priority-opt').forEach(o => o.classList.toggle('active', o.dataset.v === task.priority));
+    
+    renderCatPills(task.category);
+  } else {
+    document.getElementById('modalTitle').textContent = 'New Task';
+    document.getElementById('fTitle').value = '';
+    document.getElementById('fNotes').value = '';
+    document.getElementById('fReminder').value = '';
+    document.getElementById('deleteBtn').style.display = 'none';
+    
+    document.querySelectorAll('#statusRow .status-opt').forEach(o => o.classList.toggle('active', o.dataset.v === 'todo'));
+    document.querySelectorAll('#priorityRow .priority-opt').forEach(o => o.classList.toggle('active', o.dataset.v === 'med'));
+    
+    renderCatPills(null);
+  }
+  
+  modal.classList.add('show');
+  if (!id) setTimeout(() => document.getElementById('fTitle').focus(), 200);
+}
+
+function closeModal() {
+  document.getElementById('modalBg').classList.remove('show');
+  editingId = null;
+}
+
+function renderCatPills(selected) {
+  document.getElementById('catPills').innerHTML = state.categories.map(c => 
+    `<div class="cat-pill ${selected===c?'active':''}" onclick="pickCat(this)" data-v="${c}">${c}</div>`
+  ).join('');
+}
+
+function pickCat(el) {
+  document.querySelectorAll('#catPills .cat-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+}
+function pickStatus(el) {
+  document.querySelectorAll('#statusRow .status-opt').forEach(o => o.classList.remove('active'));
+  el.classList.add('active');
+}
+function pickPriority(el) {
+  document.querySelectorAll('#priorityRow .priority-opt').forEach(o => o.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function addCategory(name) {
+  name = name.trim();
+  if (!name || state.categories.includes(name)) return;
+  state.categories.push(name);
+  saveState();
+  renderCatPills(name);
+  // Auto-select the new one
+  const pills = document.querySelectorAll('#catPills .cat-pill');
+  pills.forEach(p => p.classList.toggle('active', p.dataset.v === name));
+}
+
+function saveTask() {
+  const title = document.getElementById('fTitle').value.trim();
+  if (!title) { alert('Title required'); return; }
+  
+  const status = document.querySelector('#statusRow .status-opt.active')?.dataset.v || 'todo';
+  const priority = document.querySelector('#priorityRow .priority-opt.active')?.dataset.v || 'med';
+  const category = document.querySelector('#catPills .cat-pill.active')?.dataset.v || '';
+  const notes = document.getElementById('fNotes').value.trim();
+  const reminder = document.getElementById('fReminder').value.trim();
+  
+  if (editingId) {
+    const task = state.tasks.find(t => t.id === editingId);
+    if (task) {
+      task.title = title;
+      task.status = status;
+      task.priority = priority;
+      task.category = category;
+      task.notes = notes;
+      task.reminder = reminder;
+      task.updatedAt = Date.now();
+    }
+  } else {
+    state.tasks.push({
+      id: genId(),
+      title,
+      status,
+      priority,
+      category,
+      notes,
+      reminder,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    });
+  }
+  
+  saveState();
+  closeModal();
+  render();
+}
+
+function deleteTask() {
+  if (!editingId) return;
+  if (!confirm('Delete this task?')) return;
+  state.tasks = state.tasks.filter(t => t.id !== editingId);
+  saveState();
+  closeModal();
+  render();
+}
+
+// ============ IMPORT/EXPORT ============
+// Export all tasks as JSON (for backup or sharing with Rollz)
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `rollz-hq-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (imported.tasks) {
+        state = imported;
+        saveState();
+        render();
+        alert('Imported!');
+      }
+    } catch(e) { alert('Invalid file'); }
+  };
+  reader.readAsText(file);
+}
+
+// ============ SEED DATA ============
+function seedIfEmpty() {
+  if (state.tasks.length > 0) return;
+  const seeds = [
+    {title:'Deploy quiz apps to GitHub Pages',status:'todo',priority:'high',category:'Quiz Apps',notes:'14 quiz apps built, need hosting. Cory setting up GitHub.'},
+    {title:'Wire Google Sheets backend to all quiz apps',status:'todo',priority:'high',category:'Quiz Apps',notes:'Apps Script URL needs to be deployed and configured.'},
+    {title:'Cold outreach to lead buyers',status:'todo',priority:'high',category:'Outreach',notes:'250+ buyers in BUYERS-FULL.md. Templates ready in cold-outreach-plan.md'},
+    {title:'Create remaining IG accounts',status:'progress',priority:'med',category:'IG/Social',notes:'TaxGuard âœ…. Next: JusticeLink, CaseValue today. FundPath, CreditPulse, HealthBridge Sun.'},
+    {title:'Apply new bios to 12 FB pages',status:'todo',priority:'med',category:'IG/Social',notes:'Bios written in fb-pages/new-bios.md, not applied yet.'},
+    {title:'Sportsbook class action ad campaign',status:'idea',priority:'urgent',category:'Lead Gen',notes:'Quiz app built. Need to deploy + run $50/day FB test. Cory is the perfect spokesperson.'},
+    {title:'FL leads enrichment',status:'progress',priority:'high',category:'Lead Gen',notes:'9,786 leads. Direct scraping gets ~5%. Need Snov.io or LISTGIANT.'},
+    {title:'Fill cannabis brochure questionnaire',status:'blocked',priority:'high',category:'Cannabis',notes:'Cory needs to fill cannabis-brochure/questionnaire.md. 120 Qs, 30 pre-filled.',reminder:'Cory needs to answer remaining questions'},
+    {title:'Get Flowhub AU (recreational) data',status:'blocked',priority:'med',category:'Cannabis',notes:'Both tabs showing Medical. May need separate login for Adult Use numbers.'},
+    {title:'PhantomBuster â€” diversify scraping targets',status:'progress',priority:'med',category:'LockNation',notes:'Google Sheet created with 10 competitors. Sheet needs to be made public.'},
+    {title:'Create 2 remaining FB pages (SavePoint, FuelHack)',status:'blocked',priority:'low',category:'IG/Social',notes:'FB blocking creation. Cory needs to create from phone.'},
+    {title:'Discuss webinar with Cory',status:'todo',priority:'med',category:'LockNation',reminder:'Cory wanted to talk about webinar'},
+    {title:'Email nearby towns for RE deals',status:'idea',priority:'med',category:'Real Estate',reminder:'Cory wants to discuss emailing towns for real estate deals'},
+    {title:'Clean up Cory email inbox',status:'todo',priority:'med',category:'Other',reminder:'Cory wants Rollz to clean up his email'},
+    {title:'Sign up for verified PPL platforms',status:'todo',priority:'med',category:'Lead Gen',notes:'DMS, Marketcall, LeadPoint, Astoria, QuinStreet'},
+    {title:'Send outreach: insurance lead buyer + follower guy',status:'todo',priority:'high',category:'Outreach',notes:'Messages saved in workspace. Expanded niches list ready.'},
+    {title:'Disable Netlify password protection or migrate task tracker',status:'blocked',priority:'low',category:'Tech/Dev',notes:'Free tier added password. GitHub Pages is the move.'},
+    {title:'Build LLC/tax prep/lawyer quiz apps',status:'done',priority:'high',category:'Quiz Apps',notes:'lawyer-case-eval.html, tax-prep.html, llc-setup.html â€” all built âœ…'},
+    {title:'Set up Google Alerts for class actions',status:'todo',priority:'high',category:'Lead Gen',notes:'Monitor new lawsuits for instant landing page deployment'},
+  ];
+  seeds.forEach(s => {
+    state.tasks.push({...s, id: genId(), createdAt: Date.now(), updatedAt: Date.now(), reminder: s.reminder || ''});
+  });
+  saveState();
+}
+
+// ============ INIT ============
+seedIfEmpty();
+render();
+</script>
+</body>
+</html>
