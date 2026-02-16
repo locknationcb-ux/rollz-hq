@@ -203,11 +203,17 @@ button{font-family:inherit}
 
 <script>
 const STORAGE_KEY='rollz_hq_v2';
-let state=loadState(),currentTab='all',currentCat=null,editingId=null;
+const API_URL='https://script.google.com/macros/s/AKfycbyBgV8u4OXRJgvVCpnbejGAbzrH1pnyleEMAo9jPxq_8-vX9YSHlOxT6lYnP3t1HTs/exec';
+let state=loadStateLocal(),currentTab='all',currentCat=null,editingId=null,isOnline=false;
 
 function defaultState(){return{tasks:[],categories:['LockNation','Lead Gen','Quiz Apps','Cannabis','Real Estate','Auto Insurance','IG/Social','Tech/Dev','Outreach','Black Hat','Other'],lastSync:null}}
-function loadState(){try{const r=localStorage.getItem(STORAGE_KEY);if(r)return JSON.parse(r)}catch(e){}return defaultState()}
-function saveState(){state.lastSync=Date.now();localStorage.setItem(STORAGE_KEY,JSON.stringify(state));document.getElementById('syncStatus').textContent='Saved '+new Date().toLocaleTimeString()}
+function loadStateLocal(){try{const r=localStorage.getItem(STORAGE_KEY);if(r)return JSON.parse(r)}catch(e){}return defaultState()}
+function cacheLocal(){state.lastSync=Date.now();localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
+function setSyncStatus(msg,ok){const el=document.getElementById('syncStatus');el.textContent=msg;el.style.color=ok?'var(--green)':'var(--yellow)'}
+
+async function apiGet(action){const r=await fetch(API_URL+'?action='+action,{redirect:'follow'});return r.json()}
+async function apiPost(data){const r=await fetch(API_URL,{method:'POST',body:JSON.stringify(data),redirect:'follow'});return r.json()}
+
 function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 
 function render(){renderStats();renderCatFilters();renderTasks();renderTabBadges()}
@@ -294,7 +300,7 @@ function escHtml(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').rep
 
 function switchTab(tab){currentTab=tab;document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));render()}
 
-function toggleDone(id){const task=state.tasks.find(t=>t.id===id);if(!task)return;task.status=task.status==='done'?'todo':'done';task.updatedAt=Date.now();saveState();render()}
+function toggleDone(id){const task=state.tasks.find(t=>t.id===id);if(!task)return;task.status=task.status==='done'?'todo':'done';task.updatedAt=Date.now();cacheLocal();render();apiPost({action:'updateTask',id:task.id,status:task.status,updatedAt:task.updatedAt}).then(()=>setSyncStatus('Synced âœ“',true)).catch(()=>setSyncStatus('Offline â€” cached',false))}
 
 function openModal(id){
   editingId=id||null;
@@ -326,7 +332,7 @@ function renderCatPills(sel){document.getElementById('catPills').innerHTML=state
 function pickCat(el){document.querySelectorAll('#catPills .cat-pill').forEach(p=>p.classList.remove('active'));el.classList.add('active')}
 function pickStatus(el){document.querySelectorAll('#statusRow .status-opt').forEach(o=>o.classList.remove('active'));el.classList.add('active')}
 function pickPriority(el){document.querySelectorAll('#priorityRow .priority-opt').forEach(o=>o.classList.remove('active'));el.classList.add('active')}
-function addCategory(name){name=name.trim();if(!name||state.categories.includes(name))return;state.categories.push(name);saveState();renderCatPills(name);document.querySelectorAll('#catPills .cat-pill').forEach(p=>p.classList.toggle('active',p.dataset.v===name))}
+function addCategory(name){name=name.trim();if(!name||state.categories.includes(name))return;state.categories.push(name);cacheLocal();renderCatPills(name);document.querySelectorAll('#catPills .cat-pill').forEach(p=>p.classList.toggle('active',p.dataset.v===name))}
 
 function saveTask(){
   const title=document.getElementById('fTitle').value.trim();if(!title){alert('Title required');return}
@@ -335,14 +341,22 @@ function saveTask(){
   const category=document.querySelector('#catPills .cat-pill.active')?.dataset.v||'';
   const notes=document.getElementById('fNotes').value.trim();
   const reminder=document.getElementById('fReminder').value.trim();
-  if(editingId){const task=state.tasks.find(t=>t.id===editingId);if(task){task.title=title;task.status=status;task.priority=priority;task.category=category;task.notes=notes;task.reminder=reminder;task.updatedAt=Date.now()}}
-  else{state.tasks.push({id:genId(),title,status,priority,category,notes,reminder,createdAt:Date.now(),updatedAt:Date.now()})}
-  saveState();closeModal();render();
+  if(editingId){
+    const task=state.tasks.find(t=>t.id===editingId);
+    if(task){task.title=title;task.status=status;task.priority=priority;task.category=category;task.notes=notes;task.reminder=reminder;task.updatedAt=Date.now()}
+    cacheLocal();closeModal();render();
+    apiPost({action:'updateTask',id:editingId,title,status,priority,category,notes,reminder,updatedAt:task.updatedAt}).then(()=>setSyncStatus('Synced âœ“',true)).catch(()=>setSyncStatus('Offline â€” cached',false));
+  }else{
+    const newTask={id:genId(),title,status,priority,category,notes,reminder,createdAt:Date.now(),updatedAt:Date.now()};
+    state.tasks.push(newTask);
+    cacheLocal();closeModal();render();
+    apiPost({action:'addTask',id:newTask.id,title,status,priority,category,notes,reminder,createdAt:newTask.createdAt,updatedAt:newTask.updatedAt}).then(()=>setSyncStatus('Synced âœ“',true)).catch(()=>setSyncStatus('Offline â€” cached',false));
+  }
 }
 
-function deleteTask(){if(!editingId)return;if(!confirm('Delete this task?'))return;state.tasks=state.tasks.filter(t=>t.id!==editingId);saveState();closeModal();render()}
+function deleteTask(){if(!editingId)return;if(!confirm('Delete this task?'))return;const delId=editingId;state.tasks=state.tasks.filter(t=>t.id!==delId);cacheLocal();closeModal();render();apiPost({action:'deleteTask',id:delId}).then(()=>setSyncStatus('Synced âœ“',true)).catch(()=>setSyncStatus('Offline â€” cached',false))}
 
-function seedIfEmpty(){
+async function seedIfEmpty(){
   if(state.tasks.length>0)return;
   const seeds=[
     {title:'Deploy quiz apps to GitHub Pages',status:'todo',priority:'high',category:'Quiz Apps',notes:'14 quiz apps built, need hosting. Cory setting up GitHub.'},
@@ -371,29 +385,35 @@ function seedIfEmpty(){
     {title:'Telegram group infiltration â€” scrape competitor member lists',status:'blackhat',priority:'med',category:'Black Hat',notes:'Join competitor betting Telegram groups, scrape members, mass DM with LockNation offer.'},
     {title:'Cloned landing pages â€” replicate top converting competitor funnels',status:'blackhat',priority:'low',category:'Black Hat',notes:'Playbook in locknation-cloned-pages-scraping-playbook.md'},
   ];
-  seeds.forEach(s=>{state.tasks.push({...s,id:genId(),createdAt:Date.now(),updatedAt:Date.now(),reminder:s.reminder||''})});
-  saveState();
+  for(const s of seeds){
+    const task={...s,id:genId(),createdAt:Date.now(),updatedAt:Date.now(),reminder:s.reminder||''};
+    state.tasks.push(task);
+    try{await apiPost({action:'addTask',id:task.id,title:task.title,status:task.status,priority:task.priority,category:task.category,notes:task.notes||'',reminder:task.reminder,createdAt:task.createdAt,updatedAt:task.updatedAt})}catch(e){}
+  }
+  cacheLocal();
 }
 
-seedIfEmpty();
-
-// Ensure Black Hat category + ideas exist for existing users
-if(!state.categories.includes('Black Hat')){state.categories.push('Black Hat');saveState()}
-if(!state.tasks.some(t=>t.status==='blackhat')){
-  const bh=[
-    {title:'Review Hijacking â€” Claim competitor GBPs via suggest edits',status:'blackhat',priority:'high',category:'Black Hat',notes:'Find competitors with unclaimed/poorly managed GBPs. Suggest edits to phone number, hours, website. Redirect their calls to your tracking number.'},
-    {title:'Fake GBP network for auto insurance leads',status:'blackhat',priority:'high',category:'Black Hat',notes:'30 business names ready in gbp-setup-execution/. Tracking CSV, post templates, landing pages all built.'},
-    {title:'Parasite SEO â€” pump articles to Medium/Reddit/Quora',status:'blackhat',priority:'med',category:'Black Hat',notes:'High-DA platforms rank fast. Article templates in seo-articles/. Funnel to IG and landing pages.'},
-    {title:'Mass DM via SIM farm or cloud phones',status:'blackhat',priority:'med',category:'Black Hat',notes:'Playbook in locknation-sim-farm-playbook.md. Burner accounts, rotating proxies, warm-up period.'},
-    {title:'Telegram group infiltration â€” scrape competitor member lists',status:'blackhat',priority:'med',category:'Black Hat',notes:'Join competitor betting Telegram groups, scrape members, mass DM with LockNation offer.'},
-    {title:'Cloned landing pages â€” replicate top converting competitor funnels',status:'blackhat',priority:'low',category:'Black Hat',notes:'Playbook in locknation-cloned-pages-scraping-playbook.md'},
-  ];
-  bh.forEach(s=>{state.tasks.push({...s,id:genId(),createdAt:Date.now(),updatedAt:Date.now(),reminder:''})});
-  saveState();
+async function initLoad(){
+  setSyncStatus('Loading...',true);
+  try{
+    const tasks=await apiGet('tasks');
+    if(Array.isArray(tasks)){
+      state.tasks=tasks;
+      if(!state.categories.includes('Black Hat'))state.categories.push('Black Hat');
+      cacheLocal();isOnline=true;
+      setSyncStatus('Synced âœ“',true);
+      if(state.tasks.length===0)await seedIfEmpty();
+      render();return;
+    }
+  }catch(e){console.warn('API fetch failed, using cache',e)}
+  isOnline=false;
+  setSyncStatus('Offline â€” cached',false);
+  if(state.tasks.length===0){await seedIfEmpty()}
+  render();
 }
 
 // â”€â”€ Subscriptions â”€â”€
-const SUBS = [
+let SUBS = [
   {name:'PhantomBuster',plan:'Starter',cost:69,cycle:'mo',url:'https://phantombuster.com',status:'active',note:'5 phantom slots, 20h exec/mo, resets monthly'},
   {name:'ManyChat',plan:'Pro',cost:15,cycle:'mo',url:'https://app.manychat.com',status:'active',note:'113K+ contacts, IG automation flows'},
   {name:'Instantly',plan:'Growth',cost:30,cycle:'mo',url:'https://app.instantly.ai',status:'active',note:'5 warmed emails @globalrevolve.com'},
@@ -406,6 +426,10 @@ const SUBS = [
   {name:'Shopify',plan:'Not yet',cost:0,cycle:'mo',url:'https://shopify.com',status:'planned',note:'For e-commerce stores. Cory\'s buddy has ranking software.'},
   {name:'Apollo.io',plan:'Free',cost:0,cycle:'mo',url:'https://apollo.io',status:'active',note:'239M people DB. CSV enrichment locked behind $59/mo Basic.'},
 ];
+
+async function loadSubsFromAPI(){
+  try{const subs=await apiGet('subs');if(Array.isArray(subs)&&subs.length>0)SUBS=subs}catch(e){console.warn('Subs API failed, using defaults')}
+}
 
 function renderSubs(){
   const panel=document.getElementById('subsPanel');
@@ -446,7 +470,9 @@ render=function(){_origRender();renderSubs();
   document.querySelector('.fab').style.display=currentTab==='subs'?'none':'flex';
 };
 
-render();
+render(); // initial render with cached data
+initLoad(); // then fetch from API
+loadSubsFromAPI();
 </script>
 </body>
 </html>
