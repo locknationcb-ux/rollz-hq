@@ -118,6 +118,7 @@ button{font-family:inherit}
   <div class="tab" data-tab="blocked" onclick="switchTab('blocked')">Blocked</div>
   <div class="tab" data-tab="done" onclick="switchTab('done')">Done</div>
   <div class="tab" data-tab="blackhat" onclick="switchTab('blackhat')" style="color:var(--text2)">Black Hat</div>
+  <div class="tab" data-tab="subs" onclick="switchTab('subs')" style="color:var(--text2)">ðŸ’³ Subs</div>
 </div>
 
 <div class="search-bar">
@@ -139,6 +140,12 @@ button{font-family:inherit}
   <div class="filter-btn" onclick="currentCat='Other';render()">Other</div>
 </div>
 <div class="task-list" id="taskList"></div>
+<div id="subsPanel" style="display:none;padding:12px 16px">
+  <div style="font-size:13px;color:var(--text2);margin-bottom:12px;font-weight:600">ACTIVE SUBSCRIPTIONS & TOOLS</div>
+  <div id="subsList"></div>
+  <div style="margin-top:16px;font-size:13px;color:var(--text2);font-weight:600">MONTHLY TOTAL: <span id="subsTotalMonth" style="color:var(--text);font-size:16px"></span></div>
+  <div style="font-size:11px;color:var(--text2);margin-top:4px">* = estimated / variable. Edit subscriptions in page source.</div>
+</div>
 
 <button class="fab" onclick="openModal()">+</button>
 
@@ -384,6 +391,60 @@ if(!state.tasks.some(t=>t.status==='blackhat')){
   bh.forEach(s=>{state.tasks.push({...s,id:genId(),createdAt:Date.now(),updatedAt:Date.now(),reminder:''})});
   saveState();
 }
+
+// â”€â”€ Subscriptions â”€â”€
+const SUBS = [
+  {name:'PhantomBuster',plan:'Starter',cost:69,cycle:'mo',url:'https://phantombuster.com',status:'active',note:'5 phantom slots, 20h exec/mo, resets monthly'},
+  {name:'ManyChat',plan:'Pro',cost:15,cycle:'mo',url:'https://app.manychat.com',status:'active',note:'113K+ contacts, IG automation flows'},
+  {name:'Instantly',plan:'Growth',cost:30,cycle:'mo',url:'https://app.instantly.ai',status:'active',note:'5 warmed emails @globalrevolve.com'},
+  {name:'Inflact',plan:'Pro',cost:57,cycle:'mo',url:'https://inflact.com',status:'active',note:'IG auto-reply, promo, 1.6K interactions/wk'},
+  {name:'Smartproxy',plan:'Residential',cost:12.5,cycle:'mo',url:'https://smartproxy.com',status:'active',note:'Rotating proxies for scraping'},
+  {name:'Outscraper',plan:'Pay-as-you-go',cost:10,cycle:'mo',url:'https://outscraper.com',status:'active',note:'Maps $2/1K places, Reviews $3/1K reviews. *est'},
+  {name:'Flowhub',plan:'Business',cost:0,cycle:'mo',url:'https://app.flowhub.com',status:'active',note:'Cannabis POS â€” 2 stores (Med + Rec). Cost in store ops.'},
+  {name:'Whop',plan:'Creator',cost:0,cycle:'mo',url:'https://whop.com/@locknationbets',status:'active',note:'LockNation storefront. Free until revenue (takes %)'},
+  {name:'OpenClaw',plan:'Pro',cost:0,cycle:'mo',url:'#',status:'active',note:'AI assistant (Rollz). Usage-based.'},
+  {name:'Shopify',plan:'Not yet',cost:0,cycle:'mo',url:'https://shopify.com',status:'planned',note:'For e-commerce stores. Cory\'s buddy has ranking software.'},
+  {name:'Apollo.io',plan:'Free',cost:0,cycle:'mo',url:'https://apollo.io',status:'active',note:'239M people DB. CSV enrichment locked behind $59/mo Basic.'},
+];
+
+function renderSubs(){
+  const panel=document.getElementById('subsPanel');
+  const list=document.getElementById('subsList');
+  if(currentTab!=='subs'){panel.style.display='none';return}
+  panel.style.display='block';
+  let html='';
+  const active=SUBS.filter(s=>s.status==='active');
+  const planned=SUBS.filter(s=>s.status==='planned');
+  const render=arr=>arr.map(s=>`
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:8px;box-shadow:var(--shadow)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <a href="${s.url}" target="_blank" style="font-size:14px;font-weight:600;color:var(--text);text-decoration:none">${s.name}</a>
+          <span style="font-size:11px;padding:2px 8px;border-radius:6px;margin-left:6px;background:${s.status==='active'?'var(--green-light)':'var(--yellow-light)'};color:${s.status==='active'?'var(--green)':'var(--yellow)'};font-weight:600">${s.plan}</span>
+        </div>
+        <div style="font-size:15px;font-weight:700;color:${s.cost>0?'var(--text)':'var(--green)'}">${s.cost>0?'$'+s.cost+'/'+s.cycle:'Free'}</div>
+      </div>
+      <div style="font-size:12px;color:var(--text2);margin-top:6px">${s.note}</div>
+    </div>`).join('');
+  html+='<div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;padding:8px 0 6px">Active ('+active.length+')</div>';
+  html+=render(active);
+  if(planned.length){
+    html+='<div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;padding:12px 0 6px">Planned</div>';
+    html+=render(planned);
+  }
+  list.innerHTML=html;
+  const total=active.reduce((s,x)=>s+x.cost,0);
+  document.getElementById('subsTotalMonth').textContent='$'+total.toFixed(2)+'/mo';
+}
+
+// Patch render and switchTab
+const _origRender=render;
+render=function(){_origRender();renderSubs();
+  document.getElementById('taskList').style.display=currentTab==='subs'?'none':'block';
+  document.querySelector('.search-bar').style.display=currentTab==='subs'?'none':'flex';
+  document.getElementById('catFilters').style.display=currentTab==='subs'?'none':'flex';
+  document.querySelector('.fab').style.display=currentTab==='subs'?'none':'flex';
+};
 
 render();
 </script>
